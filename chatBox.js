@@ -9,45 +9,71 @@ import {
   StyleSheet,
 } from 'react-native';
 
-export default function App() {
+export default function ChatAndComments() {
+  const [tab, setTab] = useState('chat'); // "chat" | "comments"
+
+  // Chat state
   const [messages, setMessages] = useState([
-    { id: '1', text: 'Great job on this project! 👍', user: 'Alice', replies: [] },
-    { id: '2', text: 'Looking forward to the next update!', user: 'Bob', replies: [] },
+    { id: '1', text: 'Hey! How are you?', user: 'Anestria' },
+    { id: '2', text: 'Doing good, thanks! You?', user: 'Axel' },
   ]);
-  const [input, setInput] = useState('');
+  const [messageInput, setMessageInput] = useState('');
+
+  // Comments state
+  const [comments, setComments] = useState([
+    { id: '1', text: 'Hello, thank you for chatting today!', user: 'Anestria', replies: [] },
+    { id: '2', text: 'Looking forward to the next update!', user: 'Axel', replies: [] },
+  ]);
+  const [commentInput, setCommentInput] = useState('');
   const [replyInput, setReplyInput] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
 
+  // --- Chat functions ---
   const sendMessage = () => {
-    if (input.trim() === '') return;
-
+    if (messageInput.trim() === '') return;
     const newMessage = {
       id: Date.now().toString(),
-      text: input,
+      text: messageInput,
+      user: 'You',
+    };
+    setMessages([...messages, newMessage]);
+    setMessageInput('');
+  };
+
+  const renderMessage = ({ item }) => (
+    <View style={styles.messageBox}>
+      <Text style={styles.messageUser}>{item.user}</Text>
+      <Text style={styles.messageText}>{item.text}</Text>
+    </View>
+  );
+
+  // --- Comment functions ---
+  const addComment = () => {
+    if (commentInput.trim() === '') return;
+    const newComment = {
+      id: Date.now().toString(),
+      text: commentInput,
       user: 'You',
       replies: [],
     };
-
-    setMessages([...messages, newMessage]);
-    setInput('');
+    setComments([...comments, newComment]);
+    setCommentInput('');
   };
 
-  const sendReply = (messageId) => {
+  const addReply = (commentId) => {
     if (replyInput.trim() === '') return;
-
-    const updatedMessages = messages.map((message) =>
-      message.id === messageId
+    const updatedComments = comments.map((comment) =>
+      comment.id === commentId
         ? {
-            ...message,
+            ...comment,
             replies: [
-              ...message.replies,
+              ...comment.replies,
               { id: Date.now().toString(), text: replyInput, user: 'You' },
             ],
           }
-        : message
+        : comment
     );
-
-    setMessages(updatedMessages);
+    setComments(updatedComments);
     setReplyInput('');
     setReplyingTo(null);
   };
@@ -59,10 +85,10 @@ export default function App() {
     </View>
   );
 
-  const renderMessage = ({ item }) => (
-    <View style={styles.messageBox}>
-      <Text style={styles.messageUser}>{item.user}</Text>
-      <Text style={styles.messageText}>{item.text}</Text>
+  const renderComment = ({ item }) => (
+    <View style={styles.commentBox}>
+      <Text style={styles.commentUser}>{item.user}</Text>
+      <Text style={styles.commentText}>{item.text}</Text>
 
       <TouchableOpacity onPress={() => setReplyingTo(item.id)}>
         <Text style={styles.replyButton}>Reply</Text>
@@ -85,9 +111,15 @@ export default function App() {
           />
           <TouchableOpacity
             style={styles.sendButton}
-            onPress={() => sendReply(item.id)}
+            onPress={() => addReply(item.id)}
           >
             <Text style={styles.sendText}>Send</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sendButton, { backgroundColor: '#6c757d' }]}
+            onPress={() => setReplyingTo(null)}
+          >
+            <Text style={styles.sendText}>Cancel</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -96,47 +128,122 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Chat Messages</Text>
-
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={renderMessage}
-        contentContainerStyle={styles.messageList}
-      />
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type a message..."
-          value={input}
-          onChangeText={setInput}
-        />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-          <Text style={styles.sendText}>Send</Text>
+      {/* Tabs */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'chat' && styles.activeTab]}
+          onPress={() => setTab('chat')}
+        >
+          <Text style={styles.tabText}>Chat</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'comments' && styles.activeTab]}
+          onPress={() => setTab('comments')}
+        >
+          <Text style={styles.tabText}>Comments</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Chat Section */}
+      {tab === 'chat' && (
+        <>
+          <Text style={styles.title}>Chat Messages</Text>
+          <FlatList
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.list}
+          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              value={messageInput}
+              onChangeText={setMessageInput}
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+              <Text style={styles.sendText}>Send</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {/* Comment Section */}
+      {tab === 'comments' && (
+        <>
+          <Text style={styles.title}>
+            {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+          </Text>
+          <FlatList
+            data={comments}
+            keyExtractor={(item) => item.id}
+            renderItem={renderComment}
+            contentContainerStyle={styles.list}
+          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Add a comment..."
+              value={commentInput}
+              onChangeText={setCommentInput}
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={addComment}>
+              <Text style={styles.sendText}>Post</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fa' },
-  title: { fontSize: 24, fontWeight: 'bold', margin: 15 },
-  messageList: { padding: 10 },
+
+  // Tabs
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+  },
+  tab: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+    backgroundColor: '#f1f1f1',
+  },
+  activeTab: {
+    backgroundColor: '#007bff',
+  },
+  tabText: {
+    fontWeight: 'bold',
+    color: '#333',
+  },
+
+  title: { fontSize: 20, fontWeight: 'bold', margin: 15 },
+  list: { padding: 10 },
+
+  // Messages
   messageBox: {
-    marginBottom: 20,
-    padding: 15,
+    marginBottom: 15,
+    padding: 12,
     backgroundColor: '#ffffff',
     borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
     elevation: 2,
   },
   messageUser: { fontWeight: 'bold', marginBottom: 5 },
   messageText: { fontSize: 16, color: '#333' },
+
+  // Comments
+  commentBox: {
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    elevation: 2,
+  },
+  commentUser: { fontWeight: 'bold', marginBottom: 5 },
+  commentText: { fontSize: 16, color: '#333' },
   replyButton: {
     color: '#007bff',
     marginTop: 5,
@@ -150,6 +257,8 @@ const styles = StyleSheet.create({
   },
   replyUser: { fontWeight: 'bold' },
   replyText: { fontSize: 14, color: '#333' },
+
+  // Input
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
